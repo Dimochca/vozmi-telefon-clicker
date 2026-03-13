@@ -63,12 +63,8 @@ let game = {
 const balanceEl = document.getElementById('balance');
 const clickHint = document.getElementById('clickHint');
 const clickBtn = document.getElementById('clickButton');
-const resetBtn = document.getElementById('resetBtn');
 const soundToggle = document.getElementById('soundToggleBtn');
 const musicToggle = document.getElementById('musicToggleBtn');
-const adminToggle = document.getElementById('adminToggleBtn');
-const adminPanel = document.getElementById('adminPanel');
-const adminApply = document.getElementById('adminApply');
 const autoBuyToggle = document.getElementById('autoBuyToggle');
 const autoPrestigeToggle = document.getElementById('autoPrestigeToggle');
 const autoBuyNew = document.getElementById('autoBuyNew');
@@ -169,8 +165,44 @@ const globalUpgrades = [
       getNext: (lvl) => `+${lvl}%` }
 ];
 
-// Загрузка
-function loadGame() {
+// Инициализация SDK Яндекс.Игр
+window.initSDK = async function() {
+    if (typeof YaGames === 'undefined') return;
+    try {
+        window.ysdk = await YaGames.init();
+        console.log('SDK инициализирован');
+        // Загружаем сохранение из облака
+        const playerData = await ysdk.getPlayerData();
+        if (playerData && playerData.game) {
+            try {
+                const parsed = JSON.parse(playerData.game);
+                game = { ...game, ...parsed };
+                updatePrestigeBonuses();
+                updateUI();
+                updateComboSound();
+            } catch (e) {}
+        }
+    } catch (e) {
+        console.error('Ошибка инициализации SDK:', e);
+    }
+};
+
+// Загрузка (с приоритетом SDK)
+async function loadGame() {
+    if (window.ysdk) {
+        try {
+            const playerData = await ysdk.getPlayerData();
+            if (playerData && playerData.game) {
+                const parsed = JSON.parse(playerData.game);
+                game = { ...game, ...parsed };
+                updatePrestigeBonuses();
+                updateUI();
+                updateComboSound();
+                return;
+            }
+        } catch (e) {}
+    }
+    // Fallback на localStorage
     const saved = localStorage.getItem('toxixClickerV5');
     if (saved) {
         try {
@@ -180,16 +212,21 @@ function loadGame() {
     }
     updatePrestigeBonuses();
     updateUI();
-    startTimeCounter();
-    startComboDecay();
-    updateAutoPrestigeInterval();
     updateComboSound();
 }
 
-function saveGame() {
-    localStorage.setItem('toxixClickerV5', JSON.stringify(game));
+// Сохранение
+async function saveGame() {
+    if (window.ysdk) {
+        try {
+            await ysdk.setPlayerData({ game: JSON.stringify(game) });
+        } catch (e) {}
+    } else {
+        localStorage.setItem('toxixClickerV5', JSON.stringify(game));
+    }
 }
 
+// Обновление бонусов престижа
 function updatePrestigeBonuses() {
     game.prestigeIncomeBonus = game.prestige * 10 * (1 + game.globalIncomeMultiplier * 0.05);
     game.prestigeDiscount = game.prestige * 1 * (1 + game.globalDiscountMultiplier * 0.01);
@@ -227,7 +264,6 @@ function updateUI() {
     prestigeIncomeBonusSpan.textContent = game.prestigeIncomeBonus.toFixed(1);
     prestigeDiscountSpan.textContent = game.prestigeDiscount.toFixed(1);
 
-    // Валюты
     if (game.prestigeCurrency > 0) {
         prestigeCurrencyContainer.style.display = 'block';
         prestigeCurrencySpan.textContent = game.prestigeCurrency;
@@ -249,7 +285,6 @@ function updateUI() {
     prestigeBarFill.style.width = percent + '%';
     prestigeBtn.style.display = game.totalEarnedThisPrestige >= goal ? 'block' : 'none';
 
-    // Глобальный престиж
     if (getTotalDiscount() >= 100) {
         globalPrestigeBtn.style.display = 'block';
     } else {
@@ -292,11 +327,9 @@ function updateUI() {
         }
     }
 
-    // Вкладки
     tabPrestige.style.display = game.prestige > 0 ? 'inline-block' : 'none';
     tabGlobal.style.display = game.globalPrestigeCurrency > 0 ? 'inline-block' : 'none';
 
-    // Рендерим активную вкладку
     if (tabNormal.classList.contains('active')) {
         renderUpgrades(upgradesGrid, upgrades);
     } else if (tabPrestige.classList.contains('active') && game.prestige > 0) {
@@ -372,7 +405,7 @@ function renderGlobalUpgrades(grid) {
     let html = '';
     globalUpgrades.forEach(upg => {
         const level = game[upg.id] || 0;
-        const cost = 1; // всегда 1 глобальное очко
+        const cost = 1;
         const nextDesc = upg.getNext(level + 1);
 
         html += `
@@ -450,7 +483,6 @@ function buyGlobalUpgrade(id) {
     showHint('Глобальное улучшение!');
 }
 
-// Расчёт дохода
 function calculateClickIncome() {
     let base = game.clickPower;
     base *= (1 + game.prestigeIncomeBonus / 100);
@@ -491,7 +523,6 @@ clickBtn.addEventListener('click', (e) => {
     showHint(`+${income} зв.`);
 });
 
-// Затухание комбо
 function startComboDecay() {
     if (game.comboDecayInterval) clearInterval(game.comboDecayInterval);
     game.comboDecayInterval = setInterval(() => {
@@ -506,7 +537,6 @@ function startComboDecay() {
     }, 500);
 }
 
-// Управление звуком клика
 function updateComboSound() {
     if (!game.soundEnabled) {
         clickLoopSound.pause();
@@ -521,7 +551,6 @@ function updateComboSound() {
     }
 }
 
-// Счётчик времени
 function startTimeCounter() {
     setInterval(() => {
         game.timePlayed++;
@@ -548,13 +577,7 @@ setInterval(() => {
     }
 }, 1000);
 
-// Сброс престижа
-resetBtn.addEventListener('click', () => {
-    if (confirm('Сбросить прогресс этого престижа? Престиж останется.')) {
-        resetPrestigeProgress();
-    }
-});
-
+// Сброс прогресса престижа (используется при обычном и глобальном престиже)
 function resetPrestigeProgress() {
     game.balance = 0;
     game.totalEarnedThisPrestige = 0;
@@ -617,15 +640,15 @@ globalPrestigeBtn.addEventListener('click', () => {
 globalModalYes.addEventListener('click', () => {
     if (getTotalDiscount() >= 100) {
         game.globalPrestigeCurrency++;
-        game.prestige = 0;               // ← добавляем эту строку
+        game.prestige = 0;
         game.prestigeCurrency = 0;
         game.permAutoSpeed = 0;
         game.permIncomeMultiplier = 0;
         game.permDiscount = 0;
         game.permAutoPower = 0;
         game.permCritMultiplier = 0;
-        updatePrestigeBonuses();          // пересчитает бонусы (теперь будут 0)
-        resetPrestigeProgress();          // сброс обычных улучшений
+        updatePrestigeBonuses();
+        resetPrestigeProgress();
         playSound('prestige');
         updateUI();
         showHint('ГЛОБАЛЬНЫЙ ПРЕСТИЖ!');
@@ -761,54 +784,6 @@ tabGlobal.addEventListener('click', () => {
     renderGlobalUpgrades(globalGrid);
 });
 
-// Админ-панель
-adminToggle.addEventListener('click', () => {
-    adminPanel.style.display = adminPanel.style.display === 'none' ? 'flex' : 'none';
-});
-
-adminApply.addEventListener('click', () => {
-    const balance = parseFloat(document.getElementById('adminBalance').value);
-    const prestige = parseInt(document.getElementById('adminPrestige').value);
-    const prestigeCurr = parseInt(document.getElementById('adminPrestigeCurr').value);
-    const globalCurr = parseInt(document.getElementById('adminGlobalCurr').value);
-    const clickLevel = parseInt(document.getElementById('adminClickLevel').value);
-    const autoLevel = parseInt(document.getElementById('adminAutoLevel').value);
-    const autoSpeed = parseInt(document.getElementById('adminAutoSpeed').value);
-
-    if (!isNaN(balance)) game.balance = balance;
-    if (!isNaN(prestige)) {
-        game.prestige = prestige;
-        updatePrestigeBonuses();
-    }
-    if (!isNaN(prestigeCurr)) game.prestigeCurrency = prestigeCurr;
-    if (!isNaN(globalCurr)) game.globalPrestigeCurrency = globalCurr;
-    if (!isNaN(clickLevel)) {
-        game.clickLevel = clickLevel;
-        game.clickPower = 1 + clickLevel;
-    }
-    if (!isNaN(autoLevel)) {
-        game.autoLevel = autoLevel;
-        game.autoIncome = autoLevel;
-    }
-    if (!isNaN(autoSpeed) && game.autoBuyActive) {
-        clearInterval(autoBuyInterval);
-        const intervalTime = Math.max(200, autoSpeed);
-        autoBuyInterval = setInterval(() => {
-            if (!game.autoBuyActive) return;
-            for (let upg of upgrades) {
-                const cost = getDiscountedCost(upg.id);
-                if (game.balance >= cost) {
-                    buyUpgrade(upg.id);
-                    break;
-                }
-            }
-        }, intervalTime);
-    }
-    saveGame();
-    updateUI();
-    adminPanel.style.display = 'none';
-});
-
 // Замена лица
 function trySetImage() {
     const faceDiv = document.getElementById('toxixFace');
@@ -832,7 +807,12 @@ function showHint(text) {
 }
 
 // Инициализация
-loadGame();
-trySetImage();
+(async function() {
+    await loadGame();
+    trySetImage();
+    startTimeCounter();
+    startComboDecay();
+    updateAutoPrestigeInterval();
+})();
 
 clickBtn.addEventListener('touchstart', (e) => e.preventDefault());
