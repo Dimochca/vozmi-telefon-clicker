@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Токсис Кликер — Престиж и глобал</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Yandex Games SDK -->
+    <script async src="/sdk.js" onload="window.initSDK?.()"></script>
 </head>
 <body>
     <div class="game-container">
@@ -16,8 +18,6 @@
             <div class="controls">
                 <button class="sound-btn" id="soundToggleBtn">🔊 Звук</button>
                 <button class="music-btn" id="musicToggleBtn">🎵 Музыка</button>
-                <button class="admin-btn" id="adminToggleBtn">⚙️ Админ</button>
-                <button class="reset-btn" id="resetBtn">🔄 Сброс</button>
             </div>
         </div>
 
@@ -106,7 +106,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения престижа -->
+    <!-- Модальные окна -->
     <div class="modal" id="prestigeModal">
         <div class="modal-content">
             <h2>✨ ПРЕСТИЖ ✨</h2>
@@ -120,7 +120,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения глобального престижа -->
     <div class="modal" id="globalPrestigeModal">
         <div class="modal-content">
             <h2>💎 ГЛОБАЛЬНЫЙ ПРЕСТИЖ</h2>
@@ -132,19 +131,6 @@
                 <button class="modal-btn no" id="globalModalNo">НЕТ</button>
             </div>
         </div>
-    </div>
-
-    <!-- Админ-панель -->
-    <div class="admin-panel" id="adminPanel" style="display: none;">
-        <h3>Админ-панель</h3>
-        <label>Баланс: <input type="number" id="adminBalance" value="0"></label>
-        <label>Престиж: <input type="number" id="adminPrestige" value="0"></label>
-        <label>Очки престижа: <input type="number" id="adminPrestigeCurr" value="0"></label>
-        <label>Глобальные очки: <input type="number" id="adminGlobalCurr" value="0"></label>
-        <label>Сила клика (уровень): <input type="number" id="adminClickLevel" value="0"></label>
-        <label>Автодозвон (уровень): <input type="number" id="adminAutoLevel" value="0"></label>
-        <label>Скорость автопокупки (ms): <input type="number" id="adminAutoSpeed" value="800"></label>
-        <button id="adminApply">Применить</button>
     </div>
 
     <!-- Аудио -->
