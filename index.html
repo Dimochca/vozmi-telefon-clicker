@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Токсис Кликер — Престиж и глобал</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="balance">
+                <span class="balance-label">📞 Звонки</span>
+                <span class="balance-value" id="balance">0</span>
+            </div>
+            <div class="controls">
+                <button class="sound-btn" id="soundToggleBtn">🔊 Звук</button>
+                <button class="music-btn" id="musicToggleBtn">🎵 Музыка</button>
+                <button class="admin-btn" id="adminToggleBtn">⚙️ Админ</button>
+                <button class="reset-btn" id="resetBtn">🔄 Сброс</button>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">⏱ Время в игре</span>
+                <span class="stat-value" id="statTime">00:00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🖱 Всего кликов</span>
+                <span class="stat-value" id="statTotalClicks">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">📊 За престиж</span>
+                <span class="stat-value" id="statPrestigeEarned">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🏆 За всё время</span>
+                <span class="stat-value" id="statAllTimeEarned">0</span>
+            </div>
+        </div>
+
+        <!-- Престиж область с прогресс-баром -->
+        <div class="prestige-area">
+            <div class="prestige-info">
+                <div>✨ Престиж: <span id="prestigeLevel">0</span></div>
+                <div>💰 Бонус дохода: <span id="prestigeIncomeBonus">0</span>%</div>
+                <div>🏷 Скидка: <span id="prestigeDiscount">0</span>%</div>
+                <div>⭐ Накоплено: <span id="prestigeProgress">0</span>/<span id="prestigeGoal">1000</span></div>
+                <div class="prestige-currency" id="prestigeCurrencyContainer" style="display: none;">💎 Очки престижа: <span id="prestigeCurrency">0</span></div>
+                <div class="global-currency" id="globalCurrencyContainer" style="display: none;">🔮 Глобальные очки: <span id="globalCurrency">0</span></div>
+            </div>
+            <div class="prestige-bar-container">
+                <div class="prestige-bar-fill" id="prestigeBarFill"></div>
+            </div>
+            <button class="prestige-btn" id="prestigeBtn" style="display: none;">✨ ПРЕСТИЖ ✨</button>
+            <button class="global-prestige-btn" id="globalPrestigeBtn" style="display: none;">💎 ГЛОБАЛЬНЫЙ ПРЕСТИЖ</button>
+        </div>
+
+        <!-- Комбо и кликер -->
+        <div class="clicker-area">
+            <div class="combo-indicator" id="comboIndicator"></div>
+            <div class="toxix-button" id="clickButton">
+                <div class="toxix-face" id="toxixFace">
+                    <span>😎</span><span>👓</span>
+                </div>
+            </div>
+            <div class="toxix-name">ТОКСИС</div>
+            <div class="click-hint" id="clickHint"></div>
+        </div>
+
+        <!-- Магазин улучшений -->
+        <div class="shop">
+            <div class="shop-header">
+                <h2>Улучшения</h2>
+                <div class="shop-tabs">
+                    <button class="tab-btn active" id="tabNormal">Обычные</button>
+                    <button class="tab-btn" id="tabPrestige" style="display: none;">Престиж</button>
+                    <button class="tab-btn" id="tabGlobal" style="display: none;">Глобальный</button>
+                </div>
+            </div>
+
+            <!-- Автоматические кнопки с бейджами NEW -->
+            <div class="auto-buttons">
+                <div class="auto-wrapper">
+                    <button class="auto-btn" id="autoBuyToggle" disabled>🤖 Автопокупка</button>
+                    <span class="new-badge" id="autoBuyNew" style="display: none;">NEW</span>
+                </div>
+                <div class="auto-wrapper">
+                    <button class="auto-btn" id="autoPrestigeToggle" disabled>⚡ Автопрестиж</button>
+                    <span class="new-badge" id="autoPrestigeNew" style="display: none;">NEW</span>
+                </div>
+            </div>
+            <p class="auto-note">Автопокупка покупает улучшения по порядку (сверху вниз)</p>
+
+            <!-- Сетки улучшений -->
+            <div class="upgrades-grid" id="upgradesGrid"></div>
+            <div class="upgrades-grid" id="prestigeGrid" style="display: none;"></div>
+            <div class="upgrades-grid" id="globalGrid" style="display: none;"></div>
+        </div>
+
+        <div class="footer">
+            👑 Престиж открывается после 1000 звонков (цель растёт). Каждый престиж даёт +10% доходу, +1% скидки и +1 💎.<br>
+            🎯 Главная цель: достичь 100% общей скидки! После этого откроется глобальный престиж.
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения престижа -->
+    <div class="modal" id="prestigeModal">
+        <div class="modal-content">
+            <h2>✨ ПРЕСТИЖ ✨</h2>
+            <p>Ты накопил нужное количество звонков!</p>
+            <p>Сбросить все улучшения и получить +1 уровень престижа?</p>
+            <p>Бонусы: +10% доход, +1% скидка, +1 💎.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn yes" id="modalYes">ДА</button>
+                <button class="modal-btn no" id="modalNo">НЕТ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения глобального престижа -->
+    <div class="modal" id="globalPrestigeModal">
+        <div class="modal-content">
+            <h2>💎 ГЛОБАЛЬНЫЙ ПРЕСТИЖ</h2>
+            <p>Ты достиг 100% скидки!</p>
+            <p>Сбросить все обычные улучшения и очки престижа, чтобы получить +1 глобальное очко?</p>
+            <p>Глобальные очки позволяют навсегда улучшить бонусы престижа.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn yes" id="globalModalYes">ДА</button>
+                <button class="modal-btn no" id="globalModalNo">НЕТ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Админ-панель -->
+    <div class="admin-panel" id="adminPanel" style="display: none;">
+        <h3>Админ-панель</h3>
+        <label>Баланс: <input type="number" id="adminBalance" value="0"></label>
+        <label>Престиж: <input type="number" id="adminPrestige" value="0"></label>
+        <label>Очки престижа: <input type="number" id="adminPrestigeCurr" value="0"></label>
+        <label>Глобальные очки: <input type="number" id="adminGlobalCurr" value="0"></label>
+        <label>Сила клика (уровень): <input type="number" id="adminClickLevel" value="0"></label>
+        <label>Автодозвон (уровень): <input type="number" id="adminAutoLevel" value="0"></label>
+        <label>Скорость автопокупки (ms): <input type="number" id="adminAutoSpeed" value="800"></label>
+        <button id="adminApply">Применить</button>
+    </div>
+
+    <!-- Аудио -->
+    <audio id="clickLoopSound" loop preload="auto">
+        <source src="click_loop.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="prestigeSound" preload="auto">
+        <source src="prestige.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgMusic" loop>
+        <source src="phone.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
